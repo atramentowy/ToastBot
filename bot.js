@@ -1,8 +1,14 @@
 const fs = require('fs')
 const path = require('path')
 
-const mineflayer = require('mineflayer');
-const pathfinder = require('mineflayer-pathfinder');
+const mineflayer = require('mineflayer')
+// const hawkeye = require('minecrafthawkeye').default;
+const minecraftHawkEye = require('minecrafthawkeye').default
+
+const pathfinder = require('mineflayer-pathfinder')
+const armorManager = require('mineflayer-armor-manager')
+const pvp = require('mineflayer-pvp').plugin
+// const mcDataLoader = require('minecraft-data')  // Import minecraft-data
 
 let botArgs = {
     host: 'localhost',
@@ -36,6 +42,11 @@ class MCBot {
             "version": this.version
         });
 
+        this.bot.loadPlugin(pathfinder.pathfinder);
+        this.bot.loadPlugin(minecraftHawkEye)
+        this.bot.loadPlugin(armorManager);
+        this.bot.loadPlugin(pvp);
+
         injectModules(this.bot)
 
         this.initEvents()
@@ -58,10 +69,15 @@ class MCBot {
             setTimeout(() => this.initBot(), 5000);
         });
 
-        this.bot.on('spawn', async () => {
-          this.bot.loadPlugin(pathfinder.pathfinder);
-
+        this.bot.on('spawn', async () => {      
+          // movement setup
           const defaultMove = new pathfinder.Movements(this.bot);
+          defaultMove.allowParkour = true;
+          defaultMove.allowSprinting = true;
+          defaultMove.allow1by1towers = true;
+          defaultMove.canDig = true;
+          defaultMove.dontMineUnderFallingBlock = true;
+          defaultMove.canOpenDoors = true;
 
           console.log(`[${this.username}] Spawned in`);
           this.bot.chat("Hello!");
@@ -75,8 +91,8 @@ class MCBot {
           this.bot.on('chat', (username, message) => {
             if(username === this.bot.username) return;
             if(message === 'come') {
-              const RANGE_GOAL = 1;
-              const target = this.bot.players[username]?.entity;
+              const RANGE_GOAL = 2;
+              const target = this.bot.players[username].entity;
               if (!target) {
                 this.bot.chat("I dont see you");
                 return
@@ -86,8 +102,12 @@ class MCBot {
               this.bot.pathfinder.setMovements(defaultMove);
               this.bot.pathfinder.setGoal(new pathfinder.goals.GoalNear(playerX, playerY, playerZ, RANGE_GOAL));
             }
-            else if (message === 'quit') {
+            if (message === 'quit') {
               this.bot.quit();
+            }
+
+            if(message == 'stop') {
+              this.bot.pathfinder.setGoal(null)
             }
           })
         });
@@ -104,6 +124,6 @@ class MCBot {
 }
 
 let bots = [];
-for(var i = 0; i < 6; i++) {
+for(var i = 0; i < 5; i++) {
     bots.push(new MCBot(`Toast_${i}`))
 }
